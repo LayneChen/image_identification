@@ -1,0 +1,124 @@
+syntax = "proto3";
+
+package face_recog_package;
+///////////////////////////////////////////////////////////////
+//                      服务proto定义
+//变更日志：
+//          2020.11.10 修改DetResult          罗培元
+//          2020.11.03 定义初始版本接口和数据　罗培元
+//          2020.11.02 创建初始版本　罗培元
+///////////////////////////////////////////////////////////////
+
+// 公共数据定义和枚举
+enum FaceServMsgType{
+  FACE_TYPE_NOT_DEFINED = 0;   // 类型未定义
+  FACE_DET = 1;   // 人脸检测
+  FACE_1VS1 = 2;  // 人脸1比1
+  FACE_REG = 3;   // 人脸注册
+  FACE_1VSN = 4;  // 人脸1比N搜索
+}
+message Points {
+  int32 x = 1 ;
+  int32 y = 2;
+}
+
+message DetResult {
+  Points tl = 1; // 矩形框左上角
+  Points br = 2; // 矩形框右下角
+  repeated Points keypoints = 3; // 连续5个人脸关键点，左眼，右眼，鼻子，左嘴角，右嘴角。
+  string rawImageUrl = 4; // 原始图像的 url
+  string alignedFaceUrl = 5; // 对齐人脸的 url [2020.11.10　预留不填]
+}
+
+///////////////////////////////////////////////////////////////  人脸识别服务接口定义  ///////////////////////////////////////////////////////////////////////////
+service FaceRecogService {
+  // 人脸检测
+  rpc FaceServDetect (FaceServRequestMsg) returns (FaceServReplyMsg) {}
+  // 人脸 1:1 验证
+  rpc FaceServ1VS1 (FaceServRequestMsg) returns (FaceServReplyMsg) {}
+  // 人脸注册
+  rpc FaceServRegister (FaceServRequestMsg) returns (FaceServReplyMsg) {}
+  // 人脸 1:N 搜索
+  rpc FaceServ1VSN (FaceServRequestMsg) returns (FaceServReplyMsg) {}
+
+}
+
+// 请求信息数据定义
+message FaceServRequestMsg {
+  FaceServMsgType           type = 1;
+  FaceServDetectRequest     req_det = 2;
+  FaceServ1VS1Request       req_1vs1 = 3;
+  FaceServRegisterRequest   req_register = 4;
+  FaceServ1VSNRequest       req_1vsN = 5;
+}
+// 响应信息数据定义
+message FaceServReplyMsg {
+  FaceServMsgType         type = 1;
+  FaceServDetectResult    ret_det = 2;
+  FaceServ1VS1Result      ret_1vs1 = 3;
+  FaceServRegisterResult  ret_register = 4;
+  FaceServ1VSNResult      ret_1vsN = 5;
+}
+
+///////////////////////////////////////////////////////////////  请求数据定义详情  ///////////////////////////////////////////////////////////////////////////
+// 检测请求
+message FaceServDetectRequest{
+  string message = 1;
+  string image = 2;
+  string userID = 3;    //  用户ID
+}
+// 1:1验证请求
+message FaceServ1VS1Request{
+  string message = 1;
+  string image1 = 2;
+  string image2 = 3;
+  string userID = 4;    //  用户ID
+}
+// 注册接口请求
+message FaceServRegisterRequest{
+  string message = 1;
+  string image = 2;
+  string userID = 3;    //  用户ID
+  string groupID = 4;   //  用户的关注组，比如一个用户有多个关注组用于人脸搜索，默认组名字是default
+}
+// 1:N验证请求
+message FaceServ1VSNRequest{
+  string message = 1;
+  string image = 2;
+  string userID = 3;    //  用户ID
+  string groupID = 4;   //  用户的关注组，比如一个用户有多个关注组用于人脸搜索，默认组名字是default
+}
+///////////////////////////////////////////////////////////////  响应数据定义详情  ///////////////////////////////////////////////////////////////////////////
+// 检测结果
+message FaceServDetectResult{
+  string message = 1;
+  int32 ret_code = 2; // 返回码， 成功为0,其他为非0
+  repeated DetResult ret_dets = 3; // 检测到的一个或者多人人脸
+  string userID = 6;    //  用户ID
+}
+// 1:1验证结果
+message FaceServ1VS1Result{
+  string message = 1;
+  int32 ret_code = 2; // 返回码， 成功为0,其他为非0
+  float score = 3;
+  string userID = 4;    //  用户ID
+}
+// 注册接口结果
+message FaceServRegisterResult{
+  string message = 1;
+  int32 ret_code = 2;   // 返回码， 成功为0,其他为非0
+  string userID = 3;    //  用户ID
+  string groupID = 4;   //  用户的关注组，比如一个用户有多个关注组用于人脸搜索，默认组名字是default
+  string faceID = 5;    //  人脸唯一ID
+}
+// 1:N验证结果
+message FaceServ1VSNResult{
+  string message = 1;
+  int32 ret_code = 2;               // 返回码， 成功为0,其他为非0
+  string groupID = 3;               //  用户的关注组，比如一个用户有多个关注组用于人脸搜索，默认组名字是default
+  string top1FaceID = 4;                // 搜索返回的第一名FaceID
+  float top1_score = 5;
+  repeated string top5FaceIDs = 6;      // 搜索返回前五名FaceID
+  repeated float top5_scores = 7;
+  string userID = 8;                //  用户ID
+}
